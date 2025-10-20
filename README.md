@@ -135,6 +135,29 @@ ZBX_SERVER_NAME=Mi Sistema de Monitoreo
 TZ=America/Buenos_Aires
 ```
 
+**Importante - Conflictos de puertos:** Si tienes servicios del sistema (Prometheus, Node Exporter, etc.) que ya usan los mismos puertos, puedes cambiarlos en el archivo `.env`:
+
+```env
+# Ejemplo: si tienes Prometheus del sistema en puerto 9090
+PROMETHEUS_PORT=9091
+NODE_EXPORTER_PORT=9101
+ALERTMANAGER_PORT=9094
+GRAFANA_PORT=3001
+```
+
+Para verificar qué puertos están en uso:
+
+```bash
+# Linux
+sudo netstat -tulpn | grep -E ':(9090|9100|9093|3000|8080)'
+sudo lsof -i :9090  # Ver qué proceso usa el puerto 9090
+
+# Para detener servicios del sistema que causan conflictos:
+sudo systemctl stop prometheus
+sudo systemctl stop node_exporter
+sudo systemctl disable prometheus  # Para que no se inicie automáticamente
+```
+
 ### 3. Iniciar el sistema
 
 ```bash
@@ -215,11 +238,13 @@ receivers:
 
 | Servicio | URL | Credenciales |
 |----------|-----|--------------|
-| **Grafana** | http://localhost:3000 | Ver archivo `.env` |
-| **Prometheus** | http://localhost:9090 | Sin autenticación |
-| **AlertManager** | http://localhost:9093 | Sin autenticación |
-| **Zabbix** | http://localhost:8080 | Admin / zabbix |
-| **cAdvisor** | http://localhost:8081 | Sin autenticación |
+| **Grafana** | http://localhost:3000 (o puerto configurado en `.env`) | Ver archivo `.env` |
+| **Prometheus** | http://localhost:9090 (o puerto configurado en `.env`) | Sin autenticación |
+| **AlertManager** | http://localhost:9093 (o puerto configurado en `.env`) | Sin autenticación |
+| **Zabbix** | http://localhost:8080 (o puerto configurado en `.env`) | Admin / zabbix |
+| **cAdvisor** | http://localhost:8081 (o puerto configurado en `.env`) | Sin autenticación |
+
+**Nota:** Los puertos pueden variar si configuraste puertos personalizados en el archivo `.env` para evitar conflictos.
 
 ### Comandos útiles
 
@@ -370,6 +395,42 @@ docker run --rm -v sistema-monitoreo_prometheus_data:/data \
 
 ## Troubleshooting
 
+### Problema: Conflicto de puertos (Address already in use)
+
+**Error:** `failed to bind host port... address already in use`
+
+**Causa:** Ya tienes servicios corriendo en los mismos puertos (Prometheus, Node Exporter, etc. instalados en el sistema).
+
+**Solución:**
+
+**Opción 1 - Cambiar puertos de Docker (Recomendado):**
+Edita el archivo `.env` y cambia los puertos:
+
+```env
+PROMETHEUS_PORT=9091
+NODE_EXPORTER_PORT=9101
+ALERTMANAGER_PORT=9094
+GRAFANA_PORT=3001
+ZABBIX_WEB_PORT=8082
+```
+
+**Opción 2 - Detener servicios del sistema:**
+
+```bash
+# Verificar qué está usando el puerto
+sudo lsof -i :9090
+sudo netstat -tulpn | grep 9090
+
+# Detener servicios del sistema
+sudo systemctl stop prometheus
+sudo systemctl stop node_exporter
+sudo systemctl stop alertmanager
+
+# Deshabilitarlos permanentemente (opcional)
+sudo systemctl disable prometheus
+sudo systemctl disable node_exporter
+```
+
 ### Problema: Contenedor no inicia
 
 ```bash
@@ -446,11 +507,138 @@ Este proyecto está bajo la Licencia MIT. Ver archivo `LICENSE` para más detall
 
 Si tienes problemas o preguntas:
 
-1. Revisa la sección [Troubleshooting](#-troubleshooting)
+1. Revisa la sección [Troubleshooting](#troubleshooting)
 2. Busca en [Issues](https://github.com/Veik1/sistema-monitoreo/issues)
 3. Abre un nuevo Issue con detalles del problema
 
 ---
 
-**Hecho para la comunidad de DevOps y SRE**
+## Desinstalación Completa
+
+Si deseas desinstalar completamente el sistema de monitoreo y eliminar todos los datos:
+
+### Paso 1: Detener y eliminar contenedores
+
+```bash
+# Primero, encuentra el directorio del proyecto
+# Si no recuerdas dónde está:
+find ~ -name "docker-compose.yml" -path "*/sistema-monitoreo/*" 2>/dev/null
+
+# O busca el directorio:
+find ~ -type d -name "sistema-monitoreo" 2>/dev/null
+
+# Ir al directorio del proyecto (ajusta la ruta según tu instalación)
+cd /home/test/sistema-monitoreo
+# o
+cd ~/sistema-monitoreo
+
+# Verificar que estás en el directorio correcto
+ls -la docker-compose.yml
+
+# Detener todos los contenedores
+docker-compose down
+
+# Detener y eliminar volúmenes (ELIMINA TODOS LOS DATOS)
+docker-compose down -v
+```
+
+**Alternativa si no encuentras el directorio:**
+
+```bash
+# Listar todos los contenedores (corriendo y detenidos)
+docker ps -a
+
+# Detener todos los contenedores manualmente
+docker stop prometheus grafana alertmanager node_exporter cadvisor postgres-db zabbix-server zabbix-web zabbix-agent
+
+# Eliminar todos los contenedores
+docker rm prometheus grafana alertmanager node_exporter cadvisor postgres-db zabbix-server zabbix-web zabbix-agent
+
+# Eliminar volúmenes manualmente
+docker volume rm sistema-monitoreo_prometheus_data sistema-monitoreo_grafana_data sistema-monitoreo_postgres_data sistema-monitoreo_zabbix_data sistema-monitoreo_alertmanager_data
+```
+
+### Paso 2: Eliminar imágenes Docker (opcional)
+
+```bash
+# Listar imágenes relacionadas
+docker images | grep -E "prometheus|grafana|zabbix|postgres|cadvisor|alertmanager"
+
+# Eliminar imágenes específicas (ajusta según las que tengas instaladas)
+# Usa el formato: docker rmi REPOSITORY:TAG o docker rmi IMAGE_ID
+
+# Eliminar todas las imágenes del proyecto de una vez
+docker rmi $(docker images | grep -E "prometheus|grafana|zabbix|postgres|cadvisor|alertmanager" | awk '{print $3}')
+
+# O eliminar una por una:
+docker rmi zabbix/zabbix-server-pgsql:alpine-7.0-latest
+docker rmi zabbix/zabbix-web-nginx-pgsql:alpine-7.0-latest
+docker rmi zabbix/zabbix-agent2:alpine-7.0-latest
+docker rmi postgres:16.4-alpine
+docker rmi gcr.io/cadvisor/cadvisor:v0.49.1
+docker rmi prom/alertmanager:v0.27.0
+docker rmi prom/node-exporter:v1.8.2
+docker rmi grafana/grafana-oss:11.2.2
+docker rmi prom/prometheus:v2.54.1
+
+# O usar IDs directamente (más rápido)
+# docker rmi 6f2ec18b592c d206fe41d1da 0923962459da 89ec47deeedd c02cf39d3dba 11f11916f8cd
+
+# Eliminar todas las imágenes no utilizadas
+docker image prune -a
+```
+
+### Paso 3: Eliminar redes Docker (opcional)
+
+```bash
+# Listar redes
+docker network ls | grep sistema-monitoreo
+
+# Eliminar redes específicas
+docker network rm sistema-monitoreo_monitoring
+docker network rm sistema-monitoreo_zabbix
+```
+
+### Paso 4: Eliminar el repositorio clonado
+
+```bash
+# Salir del directorio
+cd ..
+
+# Eliminar el directorio completo
+rm -rf sistema-monitoreo
+
+# O con confirmación para cada archivo (más seguro)
+rm -ri sistema-monitoreo
+```
+
+### Limpieza completa de Docker (opcional)
+
+**ADVERTENCIA:** Esto eliminará TODOS los contenedores, imágenes, volúmenes y redes no utilizados en tu sistema, no solo los de este proyecto.
+
+```bash
+# Eliminar todo lo que no está en uso
+docker system prune -a --volumes
+
+# Ver espacio liberado
+docker system df
+```
+
+### Verificación de limpieza
+
+```bash
+# Verificar que no queden contenedores
+docker ps -a
+
+# Verificar volúmenes
+docker volume ls
+
+# Verificar redes
+docker network ls
+
+# Verificar que el directorio fue eliminado
+ls -la | grep sistema-monitoreo
+```
+
+---
 
