@@ -1,0 +1,58 @@
+groups:
+  - name: prometheus_alerts
+    interval: 30s
+    rules:
+      # Alerta si Prometheus no puede alcanzar un target
+      - alert: PrometheusTargetDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: prometheus
+        annotations:
+          summary: "Target {{ $labels.job }} ({{ $labels.instance }}) está caído"
+          description: "Prometheus no puede scrapear el target {{ $labels.job }} en {{ $labels.instance }}."
+
+      # Alerta si hay muchos targets caídos
+      - alert: PrometheusMultipleTargetsDown
+        expr: count by (job) (up == 0) > 1
+        for: 5m
+        labels:
+          severity: critical
+          component: prometheus
+        annotations:
+          summary: "Múltiples targets del job {{ $labels.job }} están caídos"
+          description: "{{ $value }} targets del job {{ $labels.job }} no responden."
+
+      # Alerta si Prometheus está usando mucha memoria
+      - alert: PrometheusHighMemory
+        expr: process_resident_memory_bytes{job="prometheus"} / 1024 / 1024 / 1024 > 8
+        for: 5m
+        labels:
+          severity: warning
+          component: prometheus
+        annotations:
+          summary: "Prometheus usando mucha memoria"
+          description: "Prometheus está usando {{ $value | humanize }}GB de memoria."
+
+      # Alerta si el TSDB está llegando al límite
+      - alert: PrometheusTSDBReloadsFailing
+        expr: increase(prometheus_tsdb_reloads_failures_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+          component: prometheus
+        annotations:
+          summary: "Fallos en recargas de TSDB en Prometheus"
+          description: "Prometheus ha tenido {{ $value }} fallos al recargar TSDB en los últimos 5 minutos."
+
+      # Alerta si hay demasiadas series temporales
+      - alert: PrometheusHighCardinality
+        expr: prometheus_tsdb_symbol_table_size_bytes > 1e9
+        for: 5m
+        labels:
+          severity: warning
+          component: prometheus
+        annotations:
+          summary: "Alta cardinalidad en Prometheus"
+          description: "Prometheus tiene una tabla de símbolos de {{ $value | humanize }}B, indicando alta cardinalidad."

@@ -1,0 +1,108 @@
+# Configuración de Alertmanager
+global:
+  # Tiempo de resolución automática
+  resolve_timeout: 5m
+  # Configuración SMTP (descomentary configurar si se desea enviar emails)
+  # smtp_smarthost: 'smtp.gmail.com:587'
+  # smtp_from: 'alertmanager@example.com'
+  # smtp_auth_username: 'your-email@gmail.com'
+  # smtp_auth_password: 'your-app-password'
+  # smtp_require_tls: true
+
+# Plantillas personalizadas
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Configuración de rutas
+route:
+  # Agrupación de alertas
+  group_by: ['alertname', 'cluster', 'service']
+  # Tiempo de espera antes de enviar la primera notificación
+  group_wait: 10s
+  # Tiempo de espera antes de enviar actualizaciones sobre alertas ya agrupadas
+  group_interval: 10s
+  # Tiempo mínimo entre dos notificaciones para la misma alerta
+  repeat_interval: 12h
+  # Receptor por defecto
+  receiver: 'default'
+  
+  # Rutas específicas
+  routes:
+    # Alertas críticas
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      continue: true
+      group_wait: 5s
+      repeat_interval: 3h
+
+    # Alertas de advertencia
+    - match:
+        severity: warning
+      receiver: 'warning-alerts'
+      group_wait: 30s
+      repeat_interval: 6h
+
+    # Alertas informativas
+    - match:
+        severity: info
+      receiver: 'info-alerts'
+      group_wait: 1m
+      repeat_interval: 24h
+
+# Inhibición de alertas
+inhibit_rules:
+  # Si un nodo está caído, no alertar sobre sus servicios
+  - source_match:
+      severity: 'critical'
+      alertname: 'NodeDown'
+    target_match:
+      severity: 'warning'
+    equal: ['instance']
+
+  # Si hay alerta crítica, suprimir advertencias relacionadas
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']
+
+# Configuración de receptores
+receivers:
+  # Receptor por defecto (logs)
+  - name: 'default'
+    webhook_configs:
+      - url: 'http://localhost:5001/webhook'
+        send_resolved: true
+
+  # Receptor para alertas críticas
+  - name: 'critical-alerts'
+    # Descomentar y configurar según necesidad
+    # email_configs:
+    #   - to: 'critical-team@example.com'
+    #     headers:
+    #       Subject: '[CRITICAL] {{ .GroupLabels.alertname }}'
+    #     html: '{{ template "email.default.html" . }}'
+    #     send_resolved: true
+    
+    # Webhook para integración con otros sistemas
+    webhook_configs:
+      - url: 'http://localhost:5001/webhook/critical'
+        send_resolved: true
+
+  # Receptor para alertas de advertencia
+  - name: 'warning-alerts'
+    # email_configs:
+    #   - to: 'ops-team@example.com'
+    #     headers:
+    #       Subject: '[WARNING] {{ .GroupLabels.alertname }}'
+    #     send_resolved: true
+    webhook_configs:
+      - url: 'http://localhost:5001/webhook/warning'
+        send_resolved: true
+
+  # Receptor para alertas informativas
+  - name: 'info-alerts'
+    webhook_configs:
+      - url: 'http://localhost:5001/webhook/info'
+        send_resolved: true

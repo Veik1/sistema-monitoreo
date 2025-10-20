@@ -1,0 +1,4 @@
+# Directorio para scripts de alerta personalizados de Zabbix
+# Los scripts aquí serán montados en /usr/lib/zabbix/alertscripts
+
+# Ejemplo: scripts para enviar notificaciones a Slack, Telegram, etc.

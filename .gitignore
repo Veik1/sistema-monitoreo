@@ -1,1 +1,31 @@
+# Variables de entorno
 .env
+
+# Datos de contenedores
+prometheus_data/
+grafana_data/
+postgres_data/
+zabbix_data/
+alertmanager_data/
+
+# Logs
+*.log
+
+# Archivos temporales
+*.tmp
+*.swp
+*.swo
+*~
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+.vscode/
+*.sublime-*
+
+# Backups
+*.bak
+backup/

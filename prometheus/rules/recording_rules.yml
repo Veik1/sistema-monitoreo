@@ -1,0 +1,40 @@
+groups:
+  - name: recording_rules
+    interval: 30s
+    rules:
+      # Regla de grabación para uso de CPU agregado
+      - record: instance:node_cpu:avg_rate5m
+        expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+
+      # Regla de grabación para uso de memoria
+      - record: instance:node_memory_utilization:ratio
+        expr: 1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)
+
+      # Regla de grabación para uso de disco
+      - record: instance:node_filesystem_avail:ratio
+        expr: node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs|squashfs"} / node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs|squashfs"}
+
+      # Regla de grabación para tráfico de red
+      - record: instance:node_network_transmit:rate5m
+        expr: rate(node_network_transmit_bytes_total[5m])
+
+      - record: instance:node_network_receive:rate5m
+        expr: rate(node_network_receive_bytes_total[5m])
+
+  - name: container_recording_rules
+    interval: 30s
+    rules:
+      # CPU por contenedor
+      - record: container:cpu_usage:rate5m
+        expr: rate(container_cpu_usage_seconds_total{name!=""}[5m])
+
+      # Memoria por contenedor
+      - record: container:memory_usage:ratio
+        expr: container_memory_usage_bytes{name!=""} / container_spec_memory_limit_bytes{name!=""}
+
+      # Uso de red por contenedor
+      - record: container:network_transmit:rate5m
+        expr: rate(container_network_transmit_bytes_total{name!=""}[5m])
+
+      - record: container:network_receive:rate5m
+        expr: rate(container_network_receive_bytes_total{name!=""}[5m])

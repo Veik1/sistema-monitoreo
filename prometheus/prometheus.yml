@@ -1,12 +1,91 @@
+# Configuración global de Prometheus
 global:
+  # Intervalo de recolección de métricas por defecto
   scrape_interval: 15s
+  # Timeout de scrape
+  scrape_timeout: 10s
+  # Intervalo de evaluación de reglas
+  evaluation_interval: 15s
+  # Labels externos que se añaden a todas las métricas
+  external_labels:
+    cluster: 'monitoring-cluster'
+    environment: 'production'
+    region: 'local'
 
+# Configuración de Alertmanager
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+      timeout: 10s
+      api_version: v2
+
+# Archivos de reglas de alerta y grabación
+rule_files:
+  - '/etc/prometheus/alerts/*.yml'
+  - '/etc/prometheus/rules/*.yml'
+
+# Configuración de scrape
 scrape_configs:
+  # Monitoreo de Prometheus mismo
   - job_name: 'prometheus'
+    scrape_interval: 30s
     static_configs:
       - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+          component: 'tsdb'
 
-  # Monitoreo del servidor Linux
+  # Monitoreo del sistema (Node Exporter)
   - job_name: 'node_exporter'
+    scrape_interval: 15s
     static_configs:
       - targets: ['node_exporter:9100']
+        labels:
+          service: 'node-exporter'
+          instance: 'host-system'
+    metric_relabel_configs:
+      # Eliminar métricas no necesarias para reducir cardinalidad
+      - source_labels: [__name__]
+        regex: 'node_cpu_guest_seconds_total|node_network_transmit_queue_length|node_network_receive_errs_total'
+        action: drop
+
+  # Monitoreo de contenedores Docker (cAdvisor)
+  - job_name: 'cadvisor'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          service: 'cadvisor'
+          component: 'container-metrics'
+    metric_relabel_configs:
+      # Filtrar solo métricas de contenedores
+      - source_labels: [__name__]
+        regex: 'container_.*'
+        action: keep
+
+  # Monitoreo de Alertmanager
+  - job_name: 'alertmanager'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['alertmanager:9093']
+        labels:
+          service: 'alertmanager'
+
+  # Monitoreo de Grafana
+  - job_name: 'grafana'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['grafana:3000']
+        labels:
+          service: 'grafana'
+
+  # Placeholder para monitoreo de aplicaciones adicionales
+  # Descomentar y configurar según necesidad
+  # - job_name: 'custom-app'
+  #   scrape_interval: 15s
+  #   static_configs:
+  #     - targets: ['app:8080']
+  #       labels:
+  #         service: 'custom-app'
+  #         environment: 'production'

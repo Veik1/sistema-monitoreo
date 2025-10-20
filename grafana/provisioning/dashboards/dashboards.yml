@@ -1,0 +1,35 @@
+# Configuración de dashboards para Grafana
+apiVersion: 1
+
+providers:
+  # Dashboards personalizados
+  - name: 'default'
+    orgId: 1
+    folder: 'General'
+    type: file
+    disableDeletion: false
+    editable: true
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+
+  # Dashboards de sistema
+  - name: 'System Monitoring'
+    orgId: 1
+    folder: 'System'
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards/system
+
+  # Dashboards de contenedores
+  - name: 'Container Monitoring'
+    orgId: 1
+    folder: 'Containers'
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards/containers

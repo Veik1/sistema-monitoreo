@@ -1,0 +1,34 @@
+# Configuración de datasources para Grafana
+apiVersion: 1
+
+datasources:
+  # Prometheus como datasource principal
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      httpMethod: POST
+      prometheusType: Prometheus
+      prometheusVersion: 2.54.1
+      incrementalQuerying: true
+      disableMetricsLookup: false
+      customQueryParameters: ''
+      timeInterval: 15s
+    version: 1
+
+  # Zabbix como datasource secundario
+  - name: Zabbix
+    type: alexanderzobnin-zabbix-datasource
+    access: proxy
+    url: http://zabbix-web:8080/api_jsonrpc.php
+    editable: true
+    jsonData:
+      username: Admin
+      trends: true
+      cacheTTL: 600
+    secureJsonData:
+      password: zabbix
+    version: 1

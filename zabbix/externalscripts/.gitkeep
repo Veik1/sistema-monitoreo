@@ -1,0 +1,4 @@
+# Directorio para scripts externos de Zabbix
+# Los scripts aquí serán montados en /usr/lib/zabbix/externalscripts
+
+# Ejemplo: scripts personalizados para checks externos
