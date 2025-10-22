@@ -21,8 +21,11 @@ Sistema de monitoreo completo y de nivel empresarial que combina **Prometheus**,
 - [Dashboards](#dashboards)
 - [Mejores Prácticas](#mejores-prácticas)
 - [Troubleshooting](#troubleshooting)
-- [Contribuir](#contribuir)
+- [Recursos Adicionales](#recursos-adicionales)
+- [Soporte](#soporte)
+- [Desinstalación Completa](#desinstalación-completa)
 - [Licencia](#licencia)
+
 
 ## Características
 
@@ -479,20 +482,6 @@ sudo chown -R 65534:65534 prometheus_data/
 sudo chown -R 472:472 grafana_data/
 ```
 
-## Contribuir
-
-Las contribuciones son bienvenidas! Por favor:
-
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
-
-## Licencia
-
-Este proyecto está bajo la Licencia MIT. Ver archivo `LICENSE` para más detalles.
-
 ---
 
 ## Recursos Adicionales
@@ -502,6 +491,8 @@ Este proyecto está bajo la Licencia MIT. Ver archivo `LICENSE` para más detall
 - [Documentación de Zabbix](https://www.zabbix.com/documentation/current/)
 - [Documentación de AlertManager](https://prometheus.io/docs/alerting/latest/alertmanager/)
 - [Best Practices de Prometheus](https://prometheus.io/docs/practices/naming/)
+
+---
 
 ## Soporte
 
@@ -640,5 +631,10 @@ docker network ls
 ls -la | grep sistema-monitoreo
 ```
 
+---
+
+## Licencia
+
+Este proyecto está bajo la Licencia MIT. Ver archivo `LICENSE` para más detalles.
 ---
 
