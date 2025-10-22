@@ -636,5 +636,6 @@ ls -la | grep sistema-monitoreo
 ## Licencia
 
 Este proyecto está bajo la Licencia MIT. Ver archivo `LICENSE` para más detalles.
+
 ---
 
